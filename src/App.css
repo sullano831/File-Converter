@@ -103,6 +103,10 @@
     align-items: start;
 }
 
+.converter-bottom-container .converter-bottom-row.converter-bottom-row--two-cols {
+    grid-template-columns: 1fr 1fr;
+}
+
 .converter-bottom-container .inputs-section {
     background: transparent;
     border: none;

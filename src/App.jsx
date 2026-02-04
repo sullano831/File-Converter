@@ -81,6 +81,12 @@ export default function App() {
   const showValidationInput =
     activeVersion === 'version2_3_non_mvc' || activeVersion === 'version3_mvc' || activeVersion === 'modern_forms'
 
+  const handleVersionChange = (nextVersion) => {
+    setActiveVersion(nextVersion)
+    // Bootstrap template does not use form validation; clear any leftover text
+    if (nextVersion === 'bootstrap') setFormValidationCode('')
+  }
+
   const escapePhpString = (s) => (s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'")
 
   const handleCreateFile = () => {
@@ -528,28 +534,28 @@ export default function App() {
               <button
                 type="button"
                 className={`version-btn ${activeVersion === 'bootstrap' ? 'active' : ''}`}
-                onClick={() => setActiveVersion('bootstrap')}
+                onClick={() => handleVersionChange('bootstrap')}
               >
                 {VERSIONS.bootstrap}
               </button>
               <button
                 type="button"
                 className={`version-btn ${activeVersion === 'version2_3_non_mvc' ? 'active' : ''}`}
-                onClick={() => setActiveVersion('version2_3_non_mvc')}
+                onClick={() => handleVersionChange('version2_3_non_mvc')}
               >
                 {VERSIONS.version2_3_non_mvc}
               </button>
               <button
                 type="button"
                 className={`version-btn ${activeVersion === 'version3_mvc' ? 'active' : ''}`}
-                onClick={() => setActiveVersion('version3_mvc')}
+                onClick={() => handleVersionChange('version3_mvc')}
               >
                 {VERSIONS.version3_mvc}
               </button>
               <button
                 type="button"
                 className={`version-btn ${activeVersion === 'modern_forms' ? 'active' : ''}`}
-                onClick={() => setActiveVersion('modern_forms')}
+                onClick={() => handleVersionChange('modern_forms')}
               >
                 {VERSIONS.modern_forms}
               </button>
@@ -609,7 +615,7 @@ export default function App() {
           </section>
 
           <div className="converter-bottom-container">
-            <div className="converter-bottom-row">
+            <div className={`converter-bottom-row ${showValidationInput ? '' : 'converter-bottom-row--two-cols'}`}>
               <section className="inputs-section">
                 <div className="input-group">
                   <label htmlFor="code-to-paste">HTML Code(s)</label>
@@ -624,19 +630,21 @@ export default function App() {
                 </div>
               </section>
 
-              <section className="inputs-section">
-                <div className="input-group">
-                  <label htmlFor="form-validation-code">Form Validation</label>
-                  <textarea
-                    id="form-validation-code"
-                    className="input-textarea textarea-tall"
-                    placeholder="Paste form validation code here..."
-                    value={formValidationCode}
-                    onChange={(e) => setFormValidationCode(e.target.value)}
-                    rows={18}
-                  />
-                </div>
-              </section>
+              {showValidationInput && (
+                <section className="inputs-section">
+                  <div className="input-group">
+                    <label htmlFor="form-validation-code">Form Validation</label>
+                    <textarea
+                      id="form-validation-code"
+                      className="input-textarea textarea-tall"
+                      placeholder="Paste form validation code here..."
+                      value={formValidationCode}
+                      onChange={(e) => setFormValidationCode(e.target.value)}
+                      rows={18}
+                    />
+                  </div>
+                </section>
+              )}
 
               <section className="inputs-section">
                 <div className="input-group">

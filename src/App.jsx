@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { bootstrapTemplate, BOOTSTRAP_FORM_PLACEHOLDER, FORM_NAME_PLACEHOLDER, POST_NAME_EMPTY_CHECK_PLACEHOLDER as BOOTSTRAP_POST_NAME_EMPTY_CHECK, POST_NAME_BUILD_PLACEHOLDER as BOOTSTRAP_POST_NAME_BUILD } from './templates/bootstrapTemplate'
+import { bootstrapTemplate, BOOTSTRAP_FORM_PLACEHOLDER, FORM_NAME_PLACEHOLDER, POST_NAME_EMPTY_CHECK_PLACEHOLDER as BOOTSTRAP_POST_NAME_EMPTY_CHECK, POST_NAME_BUILD_PLACEHOLDER as BOOTSTRAP_POST_NAME_BUILD, DOCU_ELSEIF_BLOCKS_PLACEHOLDER } from './templates/bootstrapTemplate'
 import { version2_3_non_mvcTemplate, V2_3_FORM_PLACEHOLDER, V2_3_VALIDATION_PLACEHOLDER, POST_NAME_EMPTY_CHECK_PLACEHOLDER as V2_3_POST_NAME_EMPTY_CHECK, POST_NAME_BUILD_PLACEHOLDER as V2_3_POST_NAME_BUILD } from './templates/version2_3_non_mvcTemplate'
 import { version3_mvcTemplate, V3_FORM_PLACEHOLDER, V3_VALIDATION_PLACEHOLDER, POST_NAME_EMPTY_CHECK_PLACEHOLDER as V3_POST_NAME_EMPTY_CHECK, POST_NAME_BUILD_PLACEHOLDER as V3_POST_NAME_BUILD } from './templates/version3_mvcTemplate'
 import { modernFormsTemplate, MODERN_FORMS_FORM_PLACEHOLDER, MODERN_FORMS_VALIDATION_PLACEHOLDER, POST_NAME_EMPTY_CHECK_PLACEHOLDER as MODERN_FORMS_POST_NAME_EMPTY_CHECK, POST_NAME_BUILD_PLACEHOLDER as MODERN_FORMS_POST_NAME_BUILD } from './templates/modernFormsTemplate'
@@ -40,6 +40,65 @@ const getChkboxValNames = (code) => {
 
 /** Escape for use inside a JS single-quoted string */
 const escapeJsString = (s) => (s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+
+/**
+ * When we see any input with name or id containing "Docu", automatically add else-if conditions
+ * for the email body. Includes the text/HTML that appears after the input tag.
+ * For 2 Docu00 we add 2 separate else-if conditions (one per occurrence).
+ */
+const getDocuElseIfBlocks = (code) => {
+  if (!code || !code.trim()) return ''
+  const html = code.trim()
+  const docuList = [] // every Docu found, including duplicates: { name, isCheckbox, isHidden, contentAfter }
+  const docuAttrRe = /(?:name|id)\s*=\s*["']([^"']*Docu[^"']*)["']/gi
+  let m
+  while ((m = docuAttrRe.exec(html)) !== null) {
+    const name = m[1]
+    const pos = m.index
+    const before = html.substring(0, pos)
+    const inputStart = before.lastIndexOf('<input')
+    if (inputStart === -1) continue
+    const after = html.substring(pos)
+    const closeAngle = after.indexOf('>')
+    if (closeAngle === -1) continue
+    const tag = html.substring(inputStart, pos + closeAngle + 1)
+    if (!/^<input\s/i.test(tag)) continue
+    const tagEnd = inputStart + tag.length
+    const isCheckbox = /type\s*=\s*["']checkbox["']/i.test(tag)
+    const isHidden = /(\s|^)hidden(\s|$|>)/i.test(tag)
+    const rest = html.substring(tagEnd)
+    const nextInput = rest.indexOf('<input')
+    const nextDivClose = rest.indexOf('</div>')
+    let end = rest.length
+    if (nextInput !== -1) end = Math.min(end, nextInput)
+    if (nextDivClose !== -1) end = Math.min(end, nextDivClose)
+    const contentAfter = rest.substring(0, end).trim()
+    docuList.push({ name, isCheckbox, isHidden, contentAfter })
+  }
+  if (docuList.length === 0) return ''
+  const escapePhpQuoted = (s) => (s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+  const blocks = []
+  docuList.forEach(({ name: docuName, isCheckbox, isHidden, contentAfter }, i) => {
+    const textAfter = contentAfter || docuName.replace(/_/g, ' ')
+    let rowContent
+    if (isCheckbox) {
+      rowContent = isHidden
+        ? '\n\n    ' + textAfter + '\n    '
+        : '\n\n    <input type="checkbox" checked disabled />  ' + textAfter + '\n    '
+    } else {
+      rowContent = '\n\n    ' + textAfter + '\n    '
+    }
+    const fullRow = '<tr><td colspan="3" style="line-height:30px">' + rowContent + '</td></tr>'
+    const escapedFull = escapePhpQuoted(fullRow)
+    const isLast = i === docuList.length - 1
+    blocks.push(
+      isLast
+        ? ` else if($key == "${docuName}") {\n\t\t\t\t\t$body .= '${escapedFull}';\n\t\t\t\t\t`
+        : ` else if($key == "${docuName}") {\n\t\t\t\t\t$body .= '${escapedFull}';\n\t\t\t\t}`
+    )
+  })
+  return blocks.join('')
+}
 
 export default function App() {
   const [activeVersion, setActiveVersion] = useState('bootstrap')
@@ -99,6 +158,68 @@ export default function App() {
 
   const escapePhpString = (s) => (s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'")
 
+  /** Get template upper/lower parts around "INSERT FORM CODE HERE" for the current version (for display on converter). */
+  const getTemplateUpperLower = () => {
+    const { emptyCheckPhp, nameBuildPhp } = getNameKeysAndPhp(nameField)
+    const formNameVal = escapePhpString(formName.trim() || 'Set an Appointment Form')
+    let contentWithPlaceholder = ''
+    let formPlaceholder = ''
+    if (activeVersion === 'bootstrap') {
+      formPlaceholder = BOOTSTRAP_FORM_PLACEHOLDER
+      contentWithPlaceholder = bootstrapTemplate
+        .replace(FORM_NAME_PLACEHOLDER, formNameVal)
+        .replace(BOOTSTRAP_POST_NAME_EMPTY_CHECK, emptyCheckPhp)
+        .replace(BOOTSTRAP_POST_NAME_BUILD, nameBuildPhp)
+      contentWithPlaceholder = contentWithPlaceholder.replace(HIDE_SHOW_PLACEHOLDER, hideShowCode.trim() || HIDE_SHOW_PLACEHOLDER)
+    } else if (activeVersion === 'version2_3_non_mvc') {
+      formPlaceholder = V2_3_FORM_PLACEHOLDER
+      contentWithPlaceholder = version2_3_non_mvcTemplate
+        .replace(FORM_NAME_PLACEHOLDER, formNameVal)
+        .replace(V2_3_POST_NAME_EMPTY_CHECK, emptyCheckPhp)
+        .replace(V2_3_POST_NAME_BUILD, nameBuildPhp)
+        .replace(V2_3_VALIDATION_PLACEHOLDER, formValidationCode.trim() || V2_3_VALIDATION_PLACEHOLDER)
+      contentWithPlaceholder = contentWithPlaceholder.replace(HIDE_SHOW_PLACEHOLDER, hideShowCode.trim() || HIDE_SHOW_PLACEHOLDER)
+      const chkboxNames = getChkboxValNames(codeToPaste)
+      const checkboxLines = chkboxNames.length > 0
+        ? chkboxNames.map((name) => `\t\t\t\tcheckboxValues('${escapeJsString(name)}');`).join('\n')
+        : "\t\t\t\tcheckboxValues('<!-- CHECKBOX_NAME_1 -->');"
+      contentWithPlaceholder = contentWithPlaceholder.replace(CHECKBOX_VALUES_LINES_PLACEHOLDER, checkboxLines)
+    } else if (activeVersion === 'version3_mvc') {
+      formPlaceholder = V3_FORM_PLACEHOLDER
+      contentWithPlaceholder = version3_mvcTemplate
+        .replace(FORM_NAME_PLACEHOLDER, formNameVal)
+        .replace(V3_POST_NAME_EMPTY_CHECK, emptyCheckPhp)
+        .replace(V3_POST_NAME_BUILD, nameBuildPhp)
+        .replace(V3_VALIDATION_PLACEHOLDER, formValidationCode.trim() || V3_VALIDATION_PLACEHOLDER)
+      contentWithPlaceholder = contentWithPlaceholder.replace(HIDE_SHOW_PLACEHOLDER, hideShowCode.trim() || HIDE_SHOW_PLACEHOLDER)
+      const chkboxNames = getChkboxValNames(codeToPaste)
+      const checkboxLines = chkboxNames.length > 0
+        ? chkboxNames.map((name) => `\t\t\t\tcheckboxValues('${escapeJsString(name)}');`).join('\n')
+        : "\t\t\t\tcheckboxValues('<!-- CHECKBOX_NAME_1 -->');"
+      contentWithPlaceholder = contentWithPlaceholder.replace(CHECKBOX_VALUES_LINES_PLACEHOLDER, checkboxLines)
+    } else if (activeVersion === 'modern_forms') {
+      formPlaceholder = MODERN_FORMS_FORM_PLACEHOLDER
+      contentWithPlaceholder = modernFormsTemplate
+        .replace(FORM_NAME_PLACEHOLDER, formNameVal)
+        .replace(MODERN_FORMS_POST_NAME_EMPTY_CHECK, emptyCheckPhp)
+        .replace(MODERN_FORMS_POST_NAME_BUILD, nameBuildPhp)
+        .replace(MODERN_FORMS_VALIDATION_PLACEHOLDER, formValidationCode.trim() || MODERN_FORMS_VALIDATION_PLACEHOLDER)
+      contentWithPlaceholder = contentWithPlaceholder.replace(HIDE_SHOW_PLACEHOLDER, hideShowCode.trim() || HIDE_SHOW_PLACEHOLDER)
+      const chkboxNames = getChkboxValNames(codeToPaste)
+      const checkboxLines = chkboxNames.length > 0
+        ? chkboxNames.map((name) => `\t\t\t\tcheckboxValues('${escapeJsString(name)}');`).join('\n')
+        : "\t\t\t\tcheckboxValues('<!-- CHECKBOX_NAME_1 -->');"
+      contentWithPlaceholder = contentWithPlaceholder.replace(CHECKBOX_VALUES_LINES_PLACEHOLDER, checkboxLines)
+    } else {
+      return { upper: '', lower: '' }
+    }
+    const idx = contentWithPlaceholder.indexOf(formPlaceholder)
+    if (idx === -1) return { upper: '', lower: '' }
+    const upper = contentWithPlaceholder.substring(0, idx)
+    const lower = contentWithPlaceholder.substring(idx + formPlaceholder.length)
+    return { upper, lower }
+  }
+
   /** Parse "Name" or "First_Name, Last_Name" into POST keys and build PHP for empty check and $name assignment. */
   const getNameKeysAndPhp = (raw) => {
     const keys = (raw || '')
@@ -136,6 +257,7 @@ export default function App() {
         .replace(FORM_NAME_PLACEHOLDER, escapePhpString(formName.trim() || 'Set an Appointment Form'))
         .replace(BOOTSTRAP_POST_NAME_EMPTY_CHECK, emptyCheckPhp)
         .replace(BOOTSTRAP_POST_NAME_BUILD, nameBuildPhp)
+        .replace(DOCU_ELSEIF_BLOCKS_PLACEHOLDER, getDocuElseIfBlocks(codeToPaste))
     } else if (activeVersion === 'version2_3_non_mvc') {
       content = version2_3_non_mvcTemplate
         .replace(V2_3_FORM_PLACEHOLDER, codeToPaste.trim())
@@ -143,6 +265,7 @@ export default function App() {
         .replace(V2_3_POST_NAME_EMPTY_CHECK, emptyCheckPhp)
         .replace(V2_3_POST_NAME_BUILD, nameBuildPhp)
         .replace(V2_3_VALIDATION_PLACEHOLDER, formValidationCode.trim() || V2_3_VALIDATION_PLACEHOLDER)
+        .replace(DOCU_ELSEIF_BLOCKS_PLACEHOLDER, getDocuElseIfBlocks(codeToPaste))
     } else if (activeVersion === 'version3_mvc') {
       content = version3_mvcTemplate
         .replace(V3_FORM_PLACEHOLDER, codeToPaste.trim())
@@ -150,6 +273,7 @@ export default function App() {
         .replace(V3_POST_NAME_EMPTY_CHECK, emptyCheckPhp)
         .replace(V3_POST_NAME_BUILD, nameBuildPhp)
         .replace(V3_VALIDATION_PLACEHOLDER, formValidationCode.trim() || V3_VALIDATION_PLACEHOLDER)
+        .replace(DOCU_ELSEIF_BLOCKS_PLACEHOLDER, getDocuElseIfBlocks(codeToPaste))
     } else if (activeVersion === 'modern_forms') {
       content = modernFormsTemplate
         .replace(MODERN_FORMS_FORM_PLACEHOLDER, codeToPaste.trim())
@@ -157,6 +281,7 @@ export default function App() {
         .replace(MODERN_FORMS_POST_NAME_EMPTY_CHECK, emptyCheckPhp)
         .replace(MODERN_FORMS_POST_NAME_BUILD, nameBuildPhp)
         .replace(MODERN_FORMS_VALIDATION_PLACEHOLDER, formValidationCode.trim() || MODERN_FORMS_VALIDATION_PLACEHOLDER)
+        .replace(DOCU_ELSEIF_BLOCKS_PLACEHOLDER, getDocuElseIfBlocks(codeToPaste))
     } else {
       const parts = [codeToPaste]
       if (formValidationCode.trim()) parts.push(formValidationCode.trim())

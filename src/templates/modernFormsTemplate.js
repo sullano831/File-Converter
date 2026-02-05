@@ -6,6 +6,7 @@ export const FORM_NAME_PLACEHOLDER = '<!--FORM_NAME-->'
 export const POST_NAME_KEY_PLACEHOLDER = '<!--POST_NAME_KEY-->'
 export const POST_NAME_EMPTY_CHECK_PLACEHOLDER = '<!--POST_NAME_EMPTY_CHECK-->'
 export const POST_NAME_BUILD_PLACEHOLDER = '<!--POST_NAME_BUILD-->'
+export const DOCU_ELSEIF_BLOCKS_PLACEHOLDER = '<!-- DOCU_ELSEIF_BLOCKS -->'
 
 export const modernFormsTemplate = `<?php
 defined('ACCESSIBLE') or exit('No direct script access allowed');
@@ -69,6 +70,8 @@ if ($_POST) {
 						
 						Form Version: V4.0-091025</span>
 					</td></tr>';
+				}
+				<!-- DOCU_ELSEIF_BLOCKS -->
 				} else {
 					$body .= '<tr><td class="Values1"colspan="2" height="28" align="left" width="40%" padding="100" style="line-height: normal; padding-left: 4px;text-justify: inter-word; word-wrap: anywhere; padding-right: 28px;">
 								<span style="position:relative !important;"><b>' . $key2 . '</b></span >:</td> <td class="Values2"colspan="2" height="28" align="left" width="50%" padding="10" style="line-height: normal; word-wrap: anywhere; "><span style="margin-top: 7px; position:relative;margin-left: 7px; border-collapse: collapse; display: inline-block;margin-bottom: 5px;margin-right: 7px;">' . htmlspecialchars(trim($value), ENT_QUOTES) . '</span> </td></tr>';

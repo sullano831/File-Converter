@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import { bootstrapTemplate, BOOTSTRAP_FORM_PLACEHOLDER, FORM_NAME_PLACEHOLDER, POST_NAME_KEY_PLACEHOLDER } from './templates/bootstrapTemplate'
-import { version2_3_non_mvcTemplate, V2_3_FORM_PLACEHOLDER, V2_3_VALIDATION_PLACEHOLDER } from './templates/version2_3_non_mvcTemplate'
-import { version3_mvcTemplate, V3_FORM_PLACEHOLDER, V3_VALIDATION_PLACEHOLDER } from './templates/version3_mvcTemplate'
-import { modernFormsTemplate, MODERN_FORMS_FORM_PLACEHOLDER, MODERN_FORMS_VALIDATION_PLACEHOLDER } from './templates/modernFormsTemplate'
+import { bootstrapTemplate, BOOTSTRAP_FORM_PLACEHOLDER, FORM_NAME_PLACEHOLDER, POST_NAME_EMPTY_CHECK_PLACEHOLDER as BOOTSTRAP_POST_NAME_EMPTY_CHECK, POST_NAME_BUILD_PLACEHOLDER as BOOTSTRAP_POST_NAME_BUILD } from './templates/bootstrapTemplate'
+import { version2_3_non_mvcTemplate, V2_3_FORM_PLACEHOLDER, V2_3_VALIDATION_PLACEHOLDER, POST_NAME_EMPTY_CHECK_PLACEHOLDER as V2_3_POST_NAME_EMPTY_CHECK, POST_NAME_BUILD_PLACEHOLDER as V2_3_POST_NAME_BUILD } from './templates/version2_3_non_mvcTemplate'
+import { version3_mvcTemplate, V3_FORM_PLACEHOLDER, V3_VALIDATION_PLACEHOLDER, POST_NAME_EMPTY_CHECK_PLACEHOLDER as V3_POST_NAME_EMPTY_CHECK, POST_NAME_BUILD_PLACEHOLDER as V3_POST_NAME_BUILD } from './templates/version3_mvcTemplate'
+import { modernFormsTemplate, MODERN_FORMS_FORM_PLACEHOLDER, MODERN_FORMS_VALIDATION_PLACEHOLDER, POST_NAME_EMPTY_CHECK_PLACEHOLDER as MODERN_FORMS_POST_NAME_EMPTY_CHECK, POST_NAME_BUILD_PLACEHOLDER as MODERN_FORMS_POST_NAME_BUILD } from './templates/modernFormsTemplate'
 import './App.css'
 
 const VERSIONS = {
@@ -58,6 +58,7 @@ export default function App() {
   const [selectedHistoryIds, setSelectedHistoryIds] = useState([]) // ids selected for bulk remove
   const [hideShowInsertModal, setHideShowInsertModal] = useState(null) // { type: 'radio'|'select'|'checkbox', count: 1 }
   const [activeTab, setActiveTab] = useState('converter') // 'converter' | 'history'
+  const [historySearchQuery, setHistorySearchQuery] = useState('')
   const [downloadHistory, setDownloadHistory] = useState(() => {
     try {
       const raw = localStorage.getItem(HISTORY_STORAGE_KEY)
@@ -89,6 +90,26 @@ export default function App() {
 
   const escapePhpString = (s) => (s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'")
 
+  /** Parse "Name" or "First_Name, Last_Name" into POST keys and build PHP for empty check and $name assignment. */
+  const getNameKeysAndPhp = (raw) => {
+    const keys = (raw || '')
+      .trim()
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+    const nameKeys = keys.length > 0 ? keys : ['Name']
+    const esc = escapePhpString
+    const emptyCheckPhp =
+      nameKeys.length === 1
+        ? `empty($_POST['${esc(nameKeys[0])}'])`
+        : nameKeys.map((k) => `empty($_POST['${esc(k)}'])`).join(' ||\n\t\t')
+    const nameBuildPhp =
+      nameKeys.length === 1
+        ? `$name = $_POST['${esc(nameKeys[0])}'];`
+        : `$name = ${nameKeys.map((k) => `$_POST['${esc(k)}']`).join(".' '.")};`
+    return { nameKeys, emptyCheckPhp, nameBuildPhp }
+  }
+
   const handleCreateFile = () => {
     if (!codeToPaste.trim()) {
       setShowPasteCodePrompt(true)
@@ -98,29 +119,34 @@ export default function App() {
       setShowRequiredFieldsPrompt(true)
       return
     }
+    const { emptyCheckPhp, nameBuildPhp } = getNameKeysAndPhp(nameField)
     let content
     if (activeVersion === 'bootstrap') {
       content = bootstrapTemplate
         .replace(BOOTSTRAP_FORM_PLACEHOLDER, codeToPaste.trim())
         .replace(FORM_NAME_PLACEHOLDER, escapePhpString(formName.trim() || 'Set an Appointment Form'))
-        .replace(new RegExp(POST_NAME_KEY_PLACEHOLDER.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), escapePhpString(nameField.trim() || 'Name'))
+        .replace(BOOTSTRAP_POST_NAME_EMPTY_CHECK, emptyCheckPhp)
+        .replace(BOOTSTRAP_POST_NAME_BUILD, nameBuildPhp)
     } else if (activeVersion === 'version2_3_non_mvc') {
       content = version2_3_non_mvcTemplate
         .replace(V2_3_FORM_PLACEHOLDER, codeToPaste.trim())
         .replace(FORM_NAME_PLACEHOLDER, escapePhpString(formName.trim() || 'Set an Appointment Form'))
-        .replace(new RegExp(POST_NAME_KEY_PLACEHOLDER.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), escapePhpString(nameField.trim() || 'Name'))
+        .replace(V2_3_POST_NAME_EMPTY_CHECK, emptyCheckPhp)
+        .replace(V2_3_POST_NAME_BUILD, nameBuildPhp)
         .replace(V2_3_VALIDATION_PLACEHOLDER, formValidationCode.trim() || V2_3_VALIDATION_PLACEHOLDER)
     } else if (activeVersion === 'version3_mvc') {
       content = version3_mvcTemplate
         .replace(V3_FORM_PLACEHOLDER, codeToPaste.trim())
         .replace(FORM_NAME_PLACEHOLDER, escapePhpString(formName.trim() || 'Set an Appointment Form'))
-        .replace(new RegExp(POST_NAME_KEY_PLACEHOLDER.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), escapePhpString(nameField.trim() || 'Name'))
+        .replace(V3_POST_NAME_EMPTY_CHECK, emptyCheckPhp)
+        .replace(V3_POST_NAME_BUILD, nameBuildPhp)
         .replace(V3_VALIDATION_PLACEHOLDER, formValidationCode.trim() || V3_VALIDATION_PLACEHOLDER)
     } else if (activeVersion === 'modern_forms') {
       content = modernFormsTemplate
         .replace(MODERN_FORMS_FORM_PLACEHOLDER, codeToPaste.trim())
         .replace(FORM_NAME_PLACEHOLDER, escapePhpString(formName.trim() || 'Set an Appointment Form'))
-        .replace(new RegExp(POST_NAME_KEY_PLACEHOLDER.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), escapePhpString(nameField.trim() || 'Name'))
+        .replace(MODERN_FORMS_POST_NAME_EMPTY_CHECK, emptyCheckPhp)
+        .replace(MODERN_FORMS_POST_NAME_BUILD, nameBuildPhp)
         .replace(MODERN_FORMS_VALIDATION_PLACEHOLDER, formValidationCode.trim() || MODERN_FORMS_VALIDATION_PLACEHOLDER)
     } else {
       const parts = [codeToPaste]
@@ -277,6 +303,20 @@ export default function App() {
       return iso
     }
   }
+
+  /** Filter history for search: match fileName, formName, nameField, version label, or date. */
+  const filteredDownloadHistory = (() => {
+    const q = (historySearchQuery || '').trim().toLowerCase()
+    if (!q) return downloadHistory
+    return downloadHistory.filter((item) => {
+      const versionLabel = (VERSIONS[item.activeVersion] ?? item.activeVersion ?? 'Bootstrap').toLowerCase()
+      const dateStr = formatHistoryDate(item.timestamp).toLowerCase()
+      const fileName = (item.fileName || '').toLowerCase()
+      const formName = (item.formName || '').toLowerCase()
+      const nameField = (item.nameField || '').toLowerCase()
+      return fileName.includes(q) || formName.includes(q) || nameField.includes(q) || versionLabel.includes(q) || dateStr.includes(q)
+    })
+  })()
 
   const labelDisplay = (text) => escapeHtml((text || '').replace(/_/g, ' '))
 
@@ -595,13 +635,14 @@ export default function App() {
                 id="name-field"
                 type="text"
                 className="input-textarea"
-                placeholder="Name"
+                placeholder="Name or comma-separated: First_Name, Last_Name"
                 value={nameField}
                 onChange={(e) => setNameField(e.target.value)}
                 required
                 aria-required="true"
                 style={{ minHeight: 'auto', padding: '0.5rem 0.75rem' }}
               />
+              <span className="input-hint">Add a comma between multiple name fields (e.g. First_Name, Last_Name) to combine them as $name = $_POST['First_Name'].' '.$_POST['Last_Name'];</span>
             </div>
 
             <section className="actions-section" style={{ marginTop: '1.25rem' }}>
@@ -694,8 +735,18 @@ export default function App() {
               <p className="history-empty">No downloads yet. Create a file to see it here.</p>
             ) : (
               <>
+                <div className="history-search-wrap">
+                  <input
+                    type="search"
+                    className="input-textarea history-search-input"
+                    placeholder="Search by file name, form name, version, or date..."
+                    value={historySearchQuery}
+                    onChange={(e) => setHistorySearchQuery(e.target.value)}
+                    aria-label="Search history"
+                  />
+                </div>
                 <div className="history-toolbar">
-                  <button type="button" className="btn-link-sm" onClick={handleHistorySelectAll}>
+                  <button type="button" className="btn-link-sm" onClick={() => setSelectedHistoryIds(filteredDownloadHistory.map((e) => e.id))}>
                     Select all
                   </button>
                   <button type="button" className="btn-link-sm" onClick={handleHistoryDeselectAll}>
@@ -712,7 +763,10 @@ export default function App() {
                   )}
                 </div>
                 <ul className="history-list">
-                  {[...downloadHistory].reverse().map((item) => (
+                  {filteredDownloadHistory.length === 0 ? (
+                    <p className="history-empty">No items match your search.</p>
+                  ) : (
+                  [...filteredDownloadHistory].reverse().map((item) => (
                     <li key={item.id} className="history-item">
                       <label className="history-item-checkbox">
                         <input
@@ -751,7 +805,8 @@ export default function App() {
                         </button>
                       </div>
                     </li>
-                  ))}
+                  ))
+                  )}
                 </ul>
               </>
             )}

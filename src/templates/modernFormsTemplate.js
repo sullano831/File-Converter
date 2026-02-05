@@ -4,6 +4,8 @@ export const MODERN_FORMS_FORM_PLACEHOLDER = '<!-- INSERT CODE HERE -->'
 export const MODERN_FORMS_VALIDATION_PLACEHOLDER = '// INSERT FORM VALIDATION CODE HERE'
 export const FORM_NAME_PLACEHOLDER = '<!--FORM_NAME-->'
 export const POST_NAME_KEY_PLACEHOLDER = '<!--POST_NAME_KEY-->'
+export const POST_NAME_EMPTY_CHECK_PLACEHOLDER = '<!--POST_NAME_EMPTY_CHECK-->'
+export const POST_NAME_BUILD_PLACEHOLDER = '<!--POST_NAME_BUILD-->'
 
 export const modernFormsTemplate = `<?php
 defined('ACCESSIBLE') or exit('No direct script access allowed');
@@ -16,7 +18,7 @@ if ($_POST) {
 	$result_recaptcha = Main::recaptcha($recaptcha_privite, $_POST);
 
 	if (
-		empty($_POST['<!--POST_NAME_KEY-->'])
+		<!--POST_NAME_EMPTY_CHECK-->
 	) {
 
 
@@ -106,7 +108,7 @@ if ($_POST) {
         }
 
 		//name of sender
-		$name = $_POST['<!--POST_NAME_KEY-->'];
+		<!--POST_NAME_BUILD-->
 		$result = insertDB($name, $subject, $body, $attachments);
 
 		$parameter = array(

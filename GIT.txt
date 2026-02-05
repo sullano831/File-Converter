@@ -1,0 +1,5 @@
+cd "C:\xampp\htdocs\file-converter"
+git status
+git add .
+git commit -m "Fix bootstrap validation UI and layout"
+git push

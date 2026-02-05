@@ -359,6 +359,16 @@
     margin-bottom: 1rem;
 }
 
+.history-search-wrap {
+    margin-bottom: 1rem;
+}
+
+.history-search-input {
+    min-height: auto !important;
+    height: auto;
+    padding: 0.6rem 1rem !important;
+}
+
 .history-toolbar {
     display: flex;
     flex-wrap: wrap;

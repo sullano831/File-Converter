@@ -53,6 +53,8 @@ export default function App() {
   const [showPasteCodePrompt, setShowPasteCodePrompt] = useState(false)
   const [showRequiredFieldsPrompt, setShowRequiredFieldsPrompt] = useState(false)
   const [viewCodeItem, setViewCodeItem] = useState(null) // history item for View Code modal
+  const [viewCodeEditContent, setViewCodeEditContent] = useState('') // editable code in View Code modal
+  const [isEditingViewCode, setIsEditingViewCode] = useState(false)
   const [removeConfirmItem, setRemoveConfirmItem] = useState(null) // history item for single remove confirmation
   const [removeConfirmIds, setRemoveConfirmIds] = useState(null) // array of ids for bulk remove confirmation
   const [selectedHistoryIds, setSelectedHistoryIds] = useState([]) // ids selected for bulk remove
@@ -78,6 +80,13 @@ export default function App() {
       // ignore quota or parse errors
     }
   }, [downloadHistory])
+
+  useEffect(() => {
+    if (viewCodeItem) {
+      setViewCodeEditContent(viewCodeItem.content || '')
+      setIsEditingViewCode(false)
+    }
+  }, [viewCodeItem])
 
   const showValidationInput =
     activeVersion === 'version2_3_non_mvc' || activeVersion === 'version3_mvc' || activeVersion === 'modern_forms'
@@ -256,6 +265,17 @@ export default function App() {
 
   const handleHistoryRemoveSelectedCancel = () => {
     setRemoveConfirmIds(null)
+  }
+
+  const handleViewCodeSaveChanges = () => {
+    if (!viewCodeItem) return
+    setDownloadHistory((prev) =>
+      prev.map((entry) =>
+        entry.id === viewCodeItem.id ? { ...entry, content: viewCodeEditContent } : entry
+      )
+    )
+    setViewCodeItem((prev) => (prev ? { ...prev, content: viewCodeEditContent } : prev))
+    setIsEditingViewCode(false)
   }
 
   /** Generate hide/show snippets for insertion (format from spec). */
@@ -959,7 +979,17 @@ export default function App() {
               </div>
             </dl>
             <div className="view-code-block-wrap">
-              <pre className="view-code-block"><code>{viewCodeItem.content}</code></pre>
+              {isEditingViewCode ? (
+                <textarea
+                  className="input-textarea textarea-tall"
+                  value={viewCodeEditContent}
+                  onChange={(e) => setViewCodeEditContent(e.target.value)}
+                  rows={18}
+                  style={{ fontFamily: 'monospace', whiteSpace: 'pre', overflowWrap: 'normal' }}
+                />
+              ) : (
+                <pre className="view-code-block"><code>{viewCodeItem.content}</code></pre>
+              )}
             </div>
             <div className="modal-actions">
               <button
@@ -969,6 +999,36 @@ export default function App() {
               >
                 Load into form
               </button>
+              {!isEditingViewCode && (
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setIsEditingViewCode(true)}
+                >
+                  Edit code
+                </button>
+              )}
+              {isEditingViewCode && (
+                <>
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    onClick={handleViewCodeSaveChanges}
+                  >
+                    Save changes
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => {
+                      setViewCodeEditContent(viewCodeItem.content || '')
+                      setIsEditingViewCode(false)
+                    }}
+                  >
+                    Cancel edit
+                  </button>
+                </>
+              )}
               <button type="button" className="btn btn-secondary btn-sm" onClick={() => setViewCodeItem(null)}>
                 Close
               </button>

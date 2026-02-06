@@ -13,6 +13,7 @@ const VERSIONS = {
 }
 
 const HISTORY_STORAGE_KEY = 'file-converter-download-history'
+const THEME_STORAGE_KEY = 'file-converter-theme'
 const HISTORY_MAX_ITEMS = 50
 const HIDE_SHOW_PLACEHOLDER = '<!-- INSERT HIDE/SHOW FUNCTIONALITY HERE -->'
 const CHECKBOX_VALUES_LINES_PLACEHOLDER = '<!-- CHECKBOX_VALUES_LINES -->'
@@ -120,6 +121,13 @@ export default function App() {
   const [hideShowInsertModal, setHideShowInsertModal] = useState(null) // { type: 'radio'|'select'|'checkbox', count: 1 }
   const [activeTab, setActiveTab] = useState('converter') // 'converter' | 'history'
   const [historySearchQuery, setHistorySearchQuery] = useState('')
+  const [theme, setTheme] = useState(() => {
+    try {
+      const saved = localStorage.getItem(THEME_STORAGE_KEY)
+      if (saved === 'dark' || saved === 'light') return saved
+    } catch {}
+    return 'light'
+  })
   const [downloadHistory, setDownloadHistory] = useState(() => {
     try {
       const raw = localStorage.getItem(HISTORY_STORAGE_KEY)
@@ -146,6 +154,15 @@ export default function App() {
       setIsEditingViewCode(false)
     }
   }, [viewCodeItem])
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, theme)
+    } catch {}
+  }, [theme])
+
+  const toggleTheme = () => setTheme((t) => (t === 'light' ? 'dark' : 'light'))
 
   const showValidationInput =
     activeVersion === 'version2_3_non_mvc' || activeVersion === 'version3_mvc' || activeVersion === 'modern_forms'
@@ -688,6 +705,20 @@ export default function App() {
     <div className="app">
       <header className="app-header">
         <h1>PHP File Converter</h1>
+        <button
+          type="button"
+          className="theme-toggle"
+          onClick={toggleTheme}
+          title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+          aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+        >
+          {theme === 'light' ? (
+            <span className="theme-toggle-icon" aria-hidden>🌙</span>
+          ) : (
+            <span className="theme-toggle-icon" aria-hidden>☀️</span>
+          )}
+          <span className="theme-toggle-label">{theme === 'light' ? 'Dark' : 'Light'}</span>
+        </button>
       </header>
 
       <div className="app-tabs">

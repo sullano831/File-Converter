@@ -8,11 +8,19 @@
 body {
     font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
     font-weight: 400;
-    background: linear-gradient(165deg, #1a2332 0%, #243447 40%, #1e2d3d 70%, #16202e 100%);
+    background: linear-gradient(165deg, #f0f3f8 0%, #e8ecf4 45%, #e2e8f0 100%);
     background-attachment: fixed;
-    color: rgba(255, 255, 255, 0.92);
+    color: #2d3036;
     line-height: 1.6;
     min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
+[data-theme="dark"] body {
+    background: linear-gradient(165deg, #1a2234 0%, #16202e 45%, #141b2a 100%);
+    color: #e8eaef;
 }
 
 #root {

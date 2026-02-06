@@ -1,5 +1,5 @@
 cd "C:\xampp\htdocs\file-converter"
 git status
 git add .
-git commit -m "added light and dark mode"
+git commit -m "redesigned light highlighted button"
 git push

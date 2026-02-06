@@ -77,7 +77,7 @@ if ($_POST){
 						
 						Form Version: V2.0-091025</span>
 					</td></tr>';
-							}
+							
 							<!-- DOCU_ELSEIF_BLOCKS -->
 							} else {
 								$body .= '<tr><td class="Values1"colspan="2" height="28" align="left" width="40%" padding="100" style="line-height: normal; padding-left: 4px;text-justify: inter-word; word-wrap: anywhere; padding-right: 28px;">

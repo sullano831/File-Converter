@@ -1,5 +1,5 @@
 cd "C:\xampp\htdocs\file-converter"
 git status
 git add .
-git commit -m "Fixed error automatic Docu conditions for all template versions"
+git commit -m "fixed Docu else-if conditions for all template versions"
 git push

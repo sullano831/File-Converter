@@ -1,0 +1,7 @@
+Changes:
+- Redesigned layout
+- "Name (POST key)" now supports multiple name fields separated by commas
+- Added search bar in the History tab for easier file tracing
+- Added "Edit code" and "Save changes" in the "View Code" modal for final code edits
+- Added automatic Docu if/else conditions: name any Docu checkbox with "Docu" in the name/id so it is added to the generated conditions automatically
+- For Docu fields with "hidden" checked, the output no longer includes "<input type=\"checkbox\" checked disabled />"

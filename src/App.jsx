@@ -93,8 +93,8 @@ const getDocuElseIfBlocks = (code) => {
     const isLast = i === docuList.length - 1
     blocks.push(
       isLast
-        ? ` else if($key == "${docuName}") {\n\t\t\t\t\t$body .= '${escapedFull}';\n\t\t\t\t\t`
-        : ` }else if($key == "${docuName}") {\n\t\t\t\t\t$body .= '${escapedFull}';\n\t\t\t\t}`
+        ? ` else if($key == "${docuName}") {\n\t\t\t\t\t$body .= '${escapedFull}';\n\t\t\t\t\t}`
+        : ` else if($key == "${docuName}") {\n\t\t\t\t\t$body .= '${escapedFull}';\n\t\t\t\t}`
     )
   })
   return blocks.join('')

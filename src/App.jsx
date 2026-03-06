@@ -703,81 +703,86 @@ export default function App() {
 
   return (
     <div className="app">
-      <header className="app-header">
-        <h1>PHP File Converter</h1>
-        <button
-          type="button"
-          className="theme-toggle"
-          onClick={toggleTheme}
-          title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-          aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-        >
-          {theme === 'light' ? (
-            <span className="theme-toggle-icon" aria-hidden>🌙</span>
-          ) : (
-            <span className="theme-toggle-icon" aria-hidden>☀️</span>
-          )}
-          <span className="theme-toggle-label">{theme === 'light' ? 'Dark' : 'Light'}</span>
-        </button>
-      </header>
+      <aside className="app-sidebar">
+        <div className="app-sidebar-inner">
+          <div className="app-logo-card">
+            <img src="./images/main-logo.png" alt="PHP File Converter" className="app-logo" />
+          </div>
+          <span className="sidebar-label">Navigate</span>
+          <div className="app-tabs app-tabs--vertical">
+            <button
+              type="button"
+              className={`tab-btn ${activeTab === 'converter' ? 'active' : ''}`}
+              onClick={() => setActiveTab('converter')}
+            >
+              Converter
+            </button>
+            <button
+              type="button"
+              className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`}
+              onClick={() => setActiveTab('history')}
+            >
+              History
+              {downloadHistory.length > 0 && (
+                <span className="tab-badge">{downloadHistory.length}</span>
+              )}
+            </button>
+          </div>
+          <span className="sidebar-label">Select version</span>
+          <div className="version-buttons version-buttons--sidebar">
+            <button
+              type="button"
+              className={`version-btn ${activeVersion === 'bootstrap' ? 'active' : ''}`}
+              onClick={() => handleVersionChange('bootstrap')}
+            >
+              {VERSIONS.bootstrap}
+            </button>
+            <button
+              type="button"
+              className={`version-btn ${activeVersion === 'version2_3_non_mvc' ? 'active' : ''}`}
+              onClick={() => handleVersionChange('version2_3_non_mvc')}
+            >
+              {VERSIONS.version2_3_non_mvc}
+            </button>
+            <button
+              type="button"
+              className={`version-btn ${activeVersion === 'version3_mvc' ? 'active' : ''}`}
+              onClick={() => handleVersionChange('version3_mvc')}
+            >
+              {VERSIONS.version3_mvc}
+            </button>
+            <button
+              type="button"
+              className={`version-btn ${activeVersion === 'modern_forms' ? 'active' : ''}`}
+              onClick={() => handleVersionChange('modern_forms')}
+            >
+              {VERSIONS.modern_forms}
+            </button>
+          </div>
+          <div className="sidebar-spacer" />
+          <button
+            type="button"
+            className="theme-toggle theme-toggle--sidebar"
+            onClick={toggleTheme}
+            title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+            aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+          >
+            {theme === 'light' ? (
+              <span className="theme-toggle-icon" aria-hidden>🌙</span>
+            ) : (
+              <span className="theme-toggle-icon" aria-hidden>☀️</span>
+            )}
+            <span className="theme-toggle-label">{theme === 'light' ? 'Dark' : 'Light'}</span>
+          </button>
+        </div>
+      </aside>
 
-      <div className="app-tabs">
-        <button
-          type="button"
-          className={`tab-btn ${activeTab === 'converter' ? 'active' : ''}`}
-          onClick={() => setActiveTab('converter')}
-        >
-          Converter
-        </button>
-        <button
-          type="button"
-          className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`}
-          onClick={() => setActiveTab('history')}
-        >
-          History
-          {downloadHistory.length > 0 && (
-            <span className="tab-badge">{downloadHistory.length}</span>
-          )}
-        </button>
-      </div>
-
+      <div className="app-body">
       <main className="app-main">
         {activeTab === 'converter' && (
         <div className="app-main-grid">
           <section className="version-section">
-            <h2 className="section-title">Select version</h2>
-            <div className="version-buttons">
-              <button
-                type="button"
-                className={`version-btn ${activeVersion === 'bootstrap' ? 'active' : ''}`}
-                onClick={() => handleVersionChange('bootstrap')}
-              >
-                {VERSIONS.bootstrap}
-              </button>
-              <button
-                type="button"
-                className={`version-btn ${activeVersion === 'version2_3_non_mvc' ? 'active' : ''}`}
-                onClick={() => handleVersionChange('version2_3_non_mvc')}
-              >
-                {VERSIONS.version2_3_non_mvc}
-              </button>
-              <button
-                type="button"
-                className={`version-btn ${activeVersion === 'version3_mvc' ? 'active' : ''}`}
-                onClick={() => handleVersionChange('version3_mvc')}
-              >
-                {VERSIONS.version3_mvc}
-              </button>
-              <button
-                type="button"
-                className={`version-btn ${activeVersion === 'modern_forms' ? 'active' : ''}`}
-                onClick={() => handleVersionChange('modern_forms')}
-              >
-                {VERSIONS.modern_forms}
-              </button>
-            </div>
-
-            <div className="input-group" style={{ marginTop: '1.25rem' }}>
+            <div className="input-group" style={{ marginTop: '0' }}>
               <label htmlFor="file-name" className="label-required">File Name</label>
               <input
                 id="file-name"
@@ -1192,6 +1197,7 @@ export default function App() {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }

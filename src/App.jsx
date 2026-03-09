@@ -706,7 +706,7 @@ export default function App() {
       <aside className="app-sidebar">
         <div className="app-sidebar-inner">
           <div className="app-logo-card">
-            <img src="./images/main-logo.png" alt="PHP File Converter" className="app-logo" />
+            <img src="/images/main-logo.png" alt="PHP File Converter" className="app-logo" />
           </div>
           <span className="sidebar-label">Navigate</span>
           <div className="app-tabs app-tabs--vertical">

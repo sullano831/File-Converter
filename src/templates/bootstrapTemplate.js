@@ -91,6 +91,29 @@ if ($_POST) {
         $subject = $formname;
         $attachments = array();
 
+           // when form has attachments, uncomment code below
+   		if(!empty($_FILES['attachment']['name'])){
+            $attachmentsdir = ABSPATH.'onlineforms/attachments/';
+            $validextensions = array('pdf', 'doc', 'docx', 'txt', 'jpg', 'jpeg', 'png', 'zip', 'rar'); // include file type here
+            for($i = 0 ; $i < count($_FILES['attachment']['name']) ; $i++ ){
+
+                $checkfile =  $attachmentsdir.$_FILES['attachment']['name'][$i];
+                //$tobeuploadfile = $_FILES['attachment']['tmp_name'][$i];
+                $tempfile = pathinfo($_FILES['attachment']['name'][$i]);
+                if(in_array(strtolower($tempfile['extension']), $validextensions)){
+                    if(file_exists($checkfile)){
+                        $storedfile = $tempfile['filename'].'-'.time().'.'.$tempfile['extension'];
+                    }else{
+                        $storedfile = $_FILES['attachment']['name'][$i];
+                    }
+
+                    if( move_uploaded_file($_FILES['attachment']['tmp_name'][$i], $attachmentsdir.$storedfile) ){
+                        $attachments[] = $storedfile;
+                    }
+                }
+            }
+        }
+
         //name of sender
         <!--POST_NAME_BUILD-->
         $result = insertDB($name, $subject, $body, $attachments);

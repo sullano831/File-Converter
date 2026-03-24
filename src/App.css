@@ -803,7 +803,7 @@
     border-radius: 16px;
     padding: 1.5rem 1.75rem;
     box-shadow: 0 24px 48px rgba(0, 0, 0, 0.12), var(--glass-inset);
-    max-width: 400px;
+    max-width: 440px;
     width: 100%;
 }
 
@@ -819,6 +819,11 @@
     flex-wrap: wrap;
     gap: 0.75rem;
     justify-content: flex-end;
+}
+
+.modal-actions--inline {
+    flex-wrap: nowrap;
+    justify-content: center;
 }
 
 .modal-actions--center {

@@ -110,6 +110,7 @@ export default function App() {
   const [formValidationCode, setFormValidationCode] = useState('')
   const [hideShowCode, setHideShowCode] = useState('')
   const [downloadConfirm, setDownloadConfirm] = useState(null) // { fileName, content }
+  const [downloadCodePreview, setDownloadCodePreview] = useState(null) // { fileName, content }
   const [showPasteCodePrompt, setShowPasteCodePrompt] = useState(false)
   const [showRequiredFieldsPrompt, setShowRequiredFieldsPrompt] = useState(false)
   const [viewCodeItem, setViewCodeItem] = useState(null) // history item for View Code modal
@@ -267,6 +268,13 @@ export default function App() {
       return
     }
     const { emptyCheckPhp, nameBuildPhp } = getNameKeysAndPhp(nameField)
+    const sanitizedCodeToPaste =
+      activeVersion === 'bootstrap'
+        ? codeToPaste
+        : codeToPaste.replace(
+            /<div[^>]*>[\s\S]*?(?:id|name)\s*=\s*["']Privacy_Policy["'][\s\S]*?<\/div>/gi,
+            ''
+          )
     let content
     if (activeVersion === 'bootstrap') {
       content = bootstrapTemplate
@@ -277,7 +285,7 @@ export default function App() {
         .replace(DOCU_ELSEIF_BLOCKS_PLACEHOLDER, getDocuElseIfBlocks(codeToPaste))
     } else if (activeVersion === 'version2_3_non_mvc') {
       content = version2_3_non_mvcTemplate
-        .replace(V2_3_FORM_PLACEHOLDER, codeToPaste.trim())
+        .replace(V2_3_FORM_PLACEHOLDER, sanitizedCodeToPaste.trim())
         .replace(FORM_NAME_PLACEHOLDER, escapePhpString(formName.trim() || 'Set an Appointment Form'))
         .replace(V2_3_POST_NAME_EMPTY_CHECK, emptyCheckPhp)
         .replace(V2_3_POST_NAME_BUILD, nameBuildPhp)
@@ -285,7 +293,7 @@ export default function App() {
         .replace(DOCU_ELSEIF_BLOCKS_PLACEHOLDER, getDocuElseIfBlocks(codeToPaste))
     } else if (activeVersion === 'version3_mvc') {
       content = version3_mvcTemplate
-        .replace(V3_FORM_PLACEHOLDER, codeToPaste.trim())
+        .replace(V3_FORM_PLACEHOLDER, sanitizedCodeToPaste.trim())
         .replace(FORM_NAME_PLACEHOLDER, escapePhpString(formName.trim() || 'Set an Appointment Form'))
         .replace(V3_POST_NAME_EMPTY_CHECK, emptyCheckPhp)
         .replace(V3_POST_NAME_BUILD, nameBuildPhp)
@@ -293,14 +301,14 @@ export default function App() {
         .replace(DOCU_ELSEIF_BLOCKS_PLACEHOLDER, getDocuElseIfBlocks(codeToPaste))
     } else if (activeVersion === 'modern_forms') {
       content = modernFormsTemplate
-        .replace(MODERN_FORMS_FORM_PLACEHOLDER, codeToPaste.trim())
+        .replace(MODERN_FORMS_FORM_PLACEHOLDER, sanitizedCodeToPaste.trim())
         .replace(FORM_NAME_PLACEHOLDER, escapePhpString(formName.trim() || 'Set an Appointment Form'))
         .replace(MODERN_FORMS_POST_NAME_EMPTY_CHECK, emptyCheckPhp)
         .replace(MODERN_FORMS_POST_NAME_BUILD, nameBuildPhp)
         .replace(MODERN_FORMS_VALIDATION_PLACEHOLDER, formValidationCode.trim() || MODERN_FORMS_VALIDATION_PLACEHOLDER)
         .replace(DOCU_ELSEIF_BLOCKS_PLACEHOLDER, getDocuElseIfBlocks(codeToPaste))
     } else {
-      const parts = [codeToPaste]
+      const parts = [sanitizedCodeToPaste]
       if (formValidationCode.trim()) parts.push(formValidationCode.trim())
       if (hideShowCode.trim()) parts.push(hideShowCode.trim())
       content = parts.join('\n\n')
@@ -345,6 +353,7 @@ export default function App() {
     a.download = downloadConfirm.fileName
     a.click()
     URL.revokeObjectURL(url)
+    setDownloadCodePreview(null)
     setDownloadConfirm(null)
   }
 
@@ -352,8 +361,27 @@ export default function App() {
     setDownloadConfirm(null)
   }
 
+  const handleDownloadViewCode = () => {
+    if (!downloadConfirm) return
+    setDownloadCodePreview(downloadConfirm)
+  }
+
+  const handleCloseDownloadCodePreview = () => {
+    setDownloadCodePreview(null)
+  }
+
   const handleHistoryDownload = (item) => {
-    const blob = new Blob([item.content], { type: 'text/plain' })
+    const bootstrapPrivacyRegex =
+      /<div class="form-check mb-3 mt-3">[\s\S]*?<label class="form-check-label" for="Privacy_Policy">I consent to the collection, use, storage, and processing of my personal and, where applicable, health-related information, including any data I submit on behalf of others, for the purpose of evaluating or fulfilling my request made through this form\. I understand this will be handled in accordance with the <a href="\/privacy-notice" target="_blank">Privacy Notice<\/a>\.<\/label>\s*<\/div>/
+    const nonBootstrapDisclaimerBlock =
+      '<div class="disclaimer"><p><input type="checkbox" class="form_chkbox" name="Privacy_Policy" style="-webkit-appearance:checkbox" /> \n' +
+      '<b>I consent to the collection, use, storage, and processing of my personal and, where applicable, health-related information, including any data I submit on behalf of others, for the purpose of evaluating or fulfilling my request made through this form. I understand this will be handled in accordance with the <a href="/privacy-notice" target="_blank">Privacy Notice</a>.</b></p>\t\t\t\t\t    \n' +
+      '</div>'
+    const needsDisclaimer = item.activeVersion && item.activeVersion !== 'bootstrap'
+    const content = needsDisclaimer
+      ? item.content.replace(bootstrapPrivacyRegex, nonBootstrapDisclaimerBlock)
+      : item.content
+    const blob = new Blob([content], { type: 'text/plain' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -653,6 +681,15 @@ export default function App() {
     const displayFormName = formName.trim() || 'Set an Appointment Form'
     const isPhp = /\$input\s*->|fields\s*\(/.test(raw)
     const formFieldsHtml = isPhp ? (phpToPreviewHtml(raw) || raw) : raw
+    const previewPrivacyBlock =
+      activeVersion === 'bootstrap'
+        ? `<div class="form-check mb-3 mt-3">
+      <input type="checkbox" class="form-check-input" id="Privacy_Policy" name="Privacy_Policy" required disabled>
+      <label class="form-check-label" for="Privacy_Policy">I consent to the collection, use, storage, and processing of my personal and, where applicable, health-related information, including any data I submit on behalf of others, for the purpose of evaluating or fulfilling my request made through this form. I understand this will be handled in accordance with the <a href="/privacy-notice" target="_blank">Privacy Notice</a>.</label>
+    </div>`
+        : `<div class="disclaimer"><p><input type="checkbox" class="form_chkbox" name="Privacy_Policy" style="-webkit-appearance:checkbox" disabled />
+      <b>I consent to the collection, use, storage, and processing of my personal and, where applicable, health-related information, including any data I submit on behalf of others, for the purpose of evaluating or fulfilling my request made through this form. I understand this will be handled in accordance with the <a href="/privacy-notice" target="_blank">Privacy Notice</a>.</b></p>
+    </div>`
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -673,10 +710,7 @@ export default function App() {
         <strong>Preview</strong> – This is how your form will look. Form submission is disabled.
       </div>
       ${formFieldsHtml}
-      <div class="form-check mb-3 mt-3">
-        <input type="checkbox" class="form-check-input" id="Privacy_Policy" name="Privacy_Policy" required disabled>
-        <label class="form-check-label" for="Privacy_Policy">I consent to the collection, use, storage, and processing of my personal and, where applicable, health-related information, including any data I submit on behalf of others, for the purpose of evaluating or fulfilling my request made through this form. I understand this will be handled in accordance with the <a href="/privacy-notice" target="_blank">Privacy Notice</a>.</label>
-      </div>
+      ${previewPrivacyBlock}
       <div class="row g-3 mb-3">
         <div class="col-md-12">
           <div class="form-group">
@@ -1001,12 +1035,40 @@ export default function App() {
             <p className="modal-message">
               Do you want to download &quot;{downloadConfirm.fileName}&quot;?
             </p>
-            <div className="modal-actions">
+            <div className="modal-actions modal-actions--inline">
               <button type="button" className="btn btn-primary" onClick={handleDownloadConfirm}>
                 Download
               </button>
+              <button type="button" className="btn btn-secondary" onClick={handleDownloadViewCode}>
+                View Code
+              </button>
               <button type="button" className="btn btn-secondary" onClick={handleDownloadCancel}>
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {downloadCodePreview && (
+        <div className="modal-overlay" onClick={handleCloseDownloadCodePreview}>
+          <div className="modal-dialog view-code-dialog" onClick={(e) => e.stopPropagation()}>
+            <h3 className="prompt-title">Code Preview</h3>
+            <dl className="view-code-details">
+              <div className="view-code-detail">
+                <dt>File name</dt>
+                <dd>{downloadCodePreview.fileName}</dd>
+              </div>
+            </dl>
+            <div className="view-code-block-wrap">
+              <pre className="view-code-block"><code>{downloadCodePreview.content}</code></pre>
+            </div>
+            <div className="modal-actions">
+              <button type="button" className="btn btn-primary btn-sm" onClick={handleDownloadConfirm}>
+                Download
+              </button>
+              <button type="button" className="btn btn-secondary btn-sm" onClick={handleCloseDownloadCodePreview}>
+                Close
               </button>
             </div>
           </div>

@@ -205,10 +205,9 @@ $best_time_to_call = array('- Please select -','Anytime','Morning at Home','Morn
 							 
 							<!-- INSERT CODE HERE -->
 
-                            <div class="form-check mb-3 mt-3">
-                        <input type="checkbox" class="form-check-input" id="Privacy_Policy" name="Privacy_Policy" required>
-                        <label class="form-check-label" for="Privacy_Policy">I consent to the collection, use, storage, and processing of my personal and, where applicable, health-related information, including any data I submit on behalf of others, for the purpose of evaluating or fulfilling my request made through this form. I understand this will be handled in accordance with the <a href="/privacy-notice" target="_blank">Privacy Notice</a>.</label>
-                    </div>
+                            <div class="disclaimer"><p><input type="checkbox" class="form_chkbox" name="Privacy_Policy" style="-webkit-appearance:checkbox" /> 
+							<b>I consent to the collection, use, storage, and processing of my personal and, where applicable, health-related information, including any data I submit on behalf of others, for the purpose of evaluating or fulfilling my request made through this form. I understand this will be handled in accordance with the <a href="/privacy-notice" target="_blank">Privacy Notice</a>.</b></p>						    
+							</div>	
 						 
 
 							<div class = "form_box5 secode_box">

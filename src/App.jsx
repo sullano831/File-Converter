@@ -15,6 +15,7 @@ const VERSIONS = {
 const HISTORY_STORAGE_KEY = 'file-converter-download-history'
 const THEME_STORAGE_KEY = 'file-converter-theme'
 const HISTORY_MAX_ITEMS = 50
+const HISTORY_PAGE_SIZE = 10
 const HIDE_SHOW_PLACEHOLDER = '<!-- INSERT HIDE/SHOW FUNCTIONALITY HERE -->'
 const CHECKBOX_VALUES_LINES_PLACEHOLDER = '<!-- CHECKBOX_VALUES_LINES -->'
 
@@ -122,6 +123,8 @@ export default function App() {
   const [hideShowInsertModal, setHideShowInsertModal] = useState(null) // { type: 'radio'|'select'|'checkbox', count: 1 }
   const [activeTab, setActiveTab] = useState('converter') // 'converter' | 'history'
   const [historySearchQuery, setHistorySearchQuery] = useState('')
+  const [historyVersionFilter, setHistoryVersionFilter] = useState('all')
+  const [historyPage, setHistoryPage] = useState(1)
   const [theme, setTheme] = useState(() => {
     try {
       const saved = localStorage.getItem(THEME_STORAGE_KEY)
@@ -148,6 +151,11 @@ export default function App() {
       // ignore quota or parse errors
     }
   }, [downloadHistory])
+
+  useEffect(() => {
+    // When history filters change, jump back to the first page.
+    setHistoryPage(1)
+  }, [historySearchQuery, historyVersionFilter])
 
   useEffect(() => {
     if (viewCodeItem) {
@@ -497,15 +505,33 @@ export default function App() {
   /** Filter history for search: match fileName, formName, nameField, version label, or date. */
   const filteredDownloadHistory = (() => {
     const q = (historySearchQuery || '').trim().toLowerCase()
-    if (!q) return downloadHistory
     return downloadHistory.filter((item) => {
+      const itemVersion = item.activeVersion ?? 'bootstrap'
+      if (historyVersionFilter !== 'all' && itemVersion !== historyVersionFilter) return false
       const versionLabel = (VERSIONS[item.activeVersion] ?? item.activeVersion ?? 'Bootstrap').toLowerCase()
       const dateStr = formatHistoryDate(item.timestamp).toLowerCase()
       const fileName = (item.fileName || '').toLowerCase()
       const formName = (item.formName || '').toLowerCase()
       const nameField = (item.nameField || '').toLowerCase()
+      if (!q) return true
       return fileName.includes(q) || formName.includes(q) || nameField.includes(q) || versionLabel.includes(q) || dateStr.includes(q)
     })
+  })()
+
+  const orderedDownloadHistory = [...filteredDownloadHistory].reverse()
+  const historyTotalPages = Math.max(1, Math.ceil(orderedDownloadHistory.length / HISTORY_PAGE_SIZE))
+  const safeHistoryPage = Math.min(historyPage, historyTotalPages)
+  const paginatedDownloadHistory = orderedDownloadHistory.slice(
+    (safeHistoryPage - 1) * HISTORY_PAGE_SIZE,
+    safeHistoryPage * HISTORY_PAGE_SIZE
+  )
+
+  const historyPageNumbers = (() => {
+    if (historyTotalPages <= 7) return Array.from({ length: historyTotalPages }, (_, i) => i + 1)
+    const pages = new Set([1, historyTotalPages, safeHistoryPage - 1, safeHistoryPage, safeHistoryPage + 1])
+    return Array.from(pages)
+      .filter((p) => p >= 1 && p <= historyTotalPages)
+      .sort((a, b) => a - b)
   })()
 
   const labelDisplay = (text) => escapeHtml((text || '').replace(/_/g, ' '))
@@ -960,6 +986,25 @@ export default function App() {
                     aria-label="Search history"
                   />
                 </div>
+                <div className="history-version-filters">
+                  <button
+                    type="button"
+                    className={`btn btn-sm ${historyVersionFilter === 'all' ? 'btn-primary' : 'btn-ghost'}`}
+                    onClick={() => setHistoryVersionFilter('all')}
+                  >
+                    All versions
+                  </button>
+                  {Object.entries(VERSIONS).map(([versionKey, versionLabel]) => (
+                    <button
+                      key={versionKey}
+                      type="button"
+                      className={`btn btn-sm ${historyVersionFilter === versionKey ? 'btn-primary' : 'btn-ghost'}`}
+                      onClick={() => setHistoryVersionFilter(versionKey)}
+                    >
+                      {versionLabel}
+                    </button>
+                  ))}
+                </div>
                 <div className="history-toolbar">
                   <button type="button" className="btn-link-sm" onClick={() => setSelectedHistoryIds(filteredDownloadHistory.map((e) => e.id))}>
                     Select all
@@ -981,7 +1026,7 @@ export default function App() {
                   {filteredDownloadHistory.length === 0 ? (
                     <p className="history-empty">No items match your search.</p>
                   ) : (
-                  [...filteredDownloadHistory].reverse().map((item) => (
+                  paginatedDownloadHistory.map((item) => (
                     <li key={item.id} className="history-item">
                       <label className="history-item-checkbox">
                         <input
@@ -1023,6 +1068,48 @@ export default function App() {
                   ))
                   )}
                 </ul>
+
+                {filteredDownloadHistory.length > 0 && historyTotalPages > 1 && (
+                  <div className="history-pagination" aria-label="Download history pagination">
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm history-pagination-btn"
+                      onClick={() => setHistoryPage(safeHistoryPage - 1)}
+                      disabled={safeHistoryPage === 1}
+                    >
+                      Prev
+                    </button>
+
+                    <div className="history-pagination-pages">
+                      {historyPageNumbers.map((p) => (
+                        <button
+                          key={p}
+                          type="button"
+                          className={`btn btn-sm history-page-btn ${
+                            p === safeHistoryPage ? 'btn-primary' : 'btn-ghost'
+                          }`}
+                          onClick={() => setHistoryPage(p)}
+                          aria-current={p === safeHistoryPage ? 'page' : undefined}
+                        >
+                          {p}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="history-pagination-meta">
+                      Page {safeHistoryPage} of {historyTotalPages}
+                    </div>
+
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm history-pagination-btn"
+                      onClick={() => setHistoryPage(safeHistoryPage + 1)}
+                      disabled={safeHistoryPage === historyTotalPages}
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
               </>
             )}
           </section>

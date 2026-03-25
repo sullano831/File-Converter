@@ -1071,43 +1071,45 @@ export default function App() {
 
                 {filteredDownloadHistory.length > 0 && historyTotalPages > 1 && (
                   <div className="history-pagination" aria-label="Download history pagination">
-                    <button
-                      type="button"
-                      className="btn btn-ghost btn-sm history-pagination-btn"
-                      onClick={() => setHistoryPage(safeHistoryPage - 1)}
-                      disabled={safeHistoryPage === 1}
-                    >
-                      Prev
-                    </button>
+                    <div className="history-pagination-controls">
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm history-pagination-btn"
+                        onClick={() => setHistoryPage(safeHistoryPage - 1)}
+                        disabled={safeHistoryPage === 1}
+                      >
+                        Prev
+                      </button>
 
-                    <div className="history-pagination-pages">
-                      {historyPageNumbers.map((p) => (
-                        <button
-                          key={p}
-                          type="button"
-                          className={`btn btn-sm history-page-btn ${
-                            p === safeHistoryPage ? 'btn-primary' : 'btn-ghost'
-                          }`}
-                          onClick={() => setHistoryPage(p)}
-                          aria-current={p === safeHistoryPage ? 'page' : undefined}
-                        >
-                          {p}
-                        </button>
-                      ))}
+                      <div className="history-pagination-pages">
+                        {historyPageNumbers.map((p) => (
+                          <button
+                            key={p}
+                            type="button"
+                            className={`btn btn-sm history-page-btn ${
+                              p === safeHistoryPage ? 'btn-primary' : 'btn-ghost'
+                            }`}
+                            onClick={() => setHistoryPage(p)}
+                            aria-current={p === safeHistoryPage ? 'page' : undefined}
+                          >
+                            {p}
+                          </button>
+                        ))}
+                      </div>
+
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm history-pagination-btn"
+                        onClick={() => setHistoryPage(safeHistoryPage + 1)}
+                        disabled={safeHistoryPage === historyTotalPages}
+                      >
+                        Next
+                      </button>
                     </div>
 
                     <div className="history-pagination-meta">
                       Page {safeHistoryPage} of {historyTotalPages}
                     </div>
-
-                    <button
-                      type="button"
-                      className="btn btn-ghost btn-sm history-pagination-btn"
-                      onClick={() => setHistoryPage(safeHistoryPage + 1)}
-                      disabled={safeHistoryPage === historyTotalPages}
-                    >
-                      Next
-                    </button>
                   </div>
                 )}
               </>
